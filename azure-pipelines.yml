@@ -8,6 +8,7 @@ trigger:
 
 pool:
   vmImage: 'windows-latest'
+  # name: COMP367-Wins # choose selfhost agent pool
 
 
 variables:
