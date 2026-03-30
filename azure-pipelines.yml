@@ -8,7 +8,8 @@ trigger:
 
 pool:
   vmImage: 'windows-latest'
-  name: COMP367-Wins
+  # name: COMP367-Wins # choose selfhost agent pool
+
 
 variables:
   solution: '**/*.sln'
@@ -48,4 +49,4 @@ steps:
   displayName: NuGet push to artifact nuget feeds
   inputs:
     command: push
-    feedPublish: cb6db79e-fb46-458a-b910-ef34696069de # using nuget feed id not name here
+    feedPublish: c9f2b76d-54b1-4410-b1d0-876ea67ed0ad # comp367demofeeds # using nuget feed id not name here
