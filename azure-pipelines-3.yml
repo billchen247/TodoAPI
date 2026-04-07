@@ -60,7 +60,7 @@ stages:
       inputs:
         PathtoPublish: '$(outputDir)'
         ArtifactName: '$(artifactName)'
-        publishLocation: 'Container'
+        #publishLocation: 'Container'
 
 # =========================
 # CD STAGE
