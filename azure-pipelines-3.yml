@@ -55,10 +55,10 @@ stages:
         arguments: '--configuration $(buildConfiguration) --output $(outputDir)'
         zipAfterPublish: true
 
-    - task: PublishBuildArtifacts@1
-      displayName: 'Publish Artifact'
+    - task: task: PublishPipelineArtifact@1
+      displayName: 'Publish pipeline artifact'
       inputs:
-        PathtoPublish: '$(outputDir)'
+        targetPath: '$(Build.ArtifactStagingDirectory)'
         ArtifactName: '$(artifactName)'
         #publishLocation: 'Container'
 
@@ -74,8 +74,13 @@ stages:
     steps:
 
     # Download the artifact from CI
-    - download: current
-      artifact: $(artifactName)
+    #- download: current
+    #  artifact: $(artifactName)
+    - task: DownloadPipelineArtifact@2
+      displayName: 'Download pipeline artifact'
+      inputs:
+        artifact:  '$(artifactName)'
+        path: '$(Pipeline.Workspace)/$(artifactName)'
 
     # Pre-check: create IIS site if missing
     - powershell: |
