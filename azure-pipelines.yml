@@ -7,44 +7,73 @@ trigger:
 - main
 
 pool:
-  vmImage: 'windows-latest'
-  # name: COMP367-Wins # choose selfhost agent pool
+  #vmImage: 'windows-latest'
+  name: COMP367-Wins # choose selfhost agent pool
 
 
 variables:
   solution: '**/*.sln'
-  buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
+  outputDir: '$(Build.ArtifactStagingDirectory)/publish'
 
 steps:
-- task: NuGetToolInstaller@1
 
-- task: NuGetCommand@2
+# ✅ Install .NET 8 SDK
+- task: UseDotNet@2
+  displayName: 'Install .NET 8 SDK'
   inputs:
-    restoreSolution: '$(solution)'
+    packageType: 'sdk'
+    version: '8.0.x'
 
-- task: VSBuild@1
+# ✅ Restore dependencies
+- task: DotNetCoreCLI@2
+  displayName: 'Restore'
   inputs:
-    solution: '$(solution)'
-    msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:DesktopBuildPackageLocation="$(build.artifactStagingDirectory)\WebApp.zip" /p:DeployIisAppPath="Default Web Site"'
-    platform: '$(buildPlatform)'
-    configuration: '$(buildConfiguration)'
+    command: 'restore'
+    projects: '$(solution)'
 
-- task: VSTest@2
+# ✅ Build
+- task: DotNetCoreCLI@2
+  displayName: 'Build'
   inputs:
-    platform: '$(buildPlatform)'
-    configuration: '$(buildConfiguration)'
+    command: 'build'
+    projects: '$(solution)'
+    arguments: '--configuration $(buildConfiguration)'
+
+# ✅ Run tests
+- task: DotNetCoreCLI@2
+  displayName: 'Test'
+  inputs:
+    command: 'test'
+    projects: '$(solution)'
+    arguments: '--configuration $(buildConfiguration)'
+
+# ✅ Publish (this replaces your old MSBuild packaging)
+- task: DotNetCoreCLI@2
+  displayName: 'Publish API'
+  inputs:
+    command: 'publish'
+    publishWebProjects: true
+    arguments: '--configuration $(buildConfiguration) --output $(outputDir)'
+    zipAfterPublish: true
+
+# ✅ Publish pipeline artifact
 - task: PublishBuildArtifacts@1
+  displayName: 'Publish Artifact'
   inputs:
-    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    PathtoPublish: '$(outputDir)'
     ArtifactName: 'todoAPI3'
     publishLocation: 'Container'
 
+# ✅ Pack NuGet (if you actually need it)
 - task: DotNetCoreCLI@2
-  displayName: dotnet pack
+  displayName: 'Pack NuGet'
   inputs:
-    command: pack
-    versioningScheme: byPrereleaseNumber
+    command: 'pack'
+    packagesToPack: '**/*.csproj'
+    versioningScheme: 'byPrereleaseNumber'
+
+# ✅ Push to Azure Artifacts
 - task: NuGetCommand@2
   displayName: NuGet push to artifact nuget feeds
   inputs:
