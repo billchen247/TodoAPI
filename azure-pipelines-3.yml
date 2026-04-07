@@ -1,0 +1,114 @@
+trigger:
+- main
+
+pool:
+  name: 'COMP367-Wins'
+
+variables:
+  buildConfiguration: 'Release'
+  artifactName: 'todoAPI3'
+  outputDir: '$(Build.ArtifactStagingDirectory)/publish'
+  apiUrl: 'http://localhost/api/todoitems'
+
+stages:
+
+# =========================
+# CI STAGE
+# =========================
+- stage: CI
+  displayName: 'Build & Package'
+  jobs:
+  - job: Build
+    steps:
+
+    - task: UseDotNet@2
+      displayName: 'Install .NET 8 SDK'
+      inputs:
+        packageType: 'sdk'
+        version: '8.0.x'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Restore'
+      inputs:
+        command: 'restore'
+        projects: '**/*.sln'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Build'
+      inputs:
+        command: 'build'
+        projects: '**/*.sln'
+        arguments: '--configuration $(buildConfiguration)'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Test'
+      inputs:
+        command: 'test'
+        projects: '**/*.sln'
+        arguments: '--configuration $(buildConfiguration)'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Publish'
+      inputs:
+        command: 'publish'
+        publishWebProjects: true
+        arguments: '--configuration $(buildConfiguration) --output $(outputDir)'
+        zipAfterPublish: true
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Artifact'
+      inputs:
+        PathtoPublish: '$(outputDir)'
+        ArtifactName: '$(artifactName)'
+        publishLocation: 'Container'
+
+# =========================
+# CD STAGE
+# =========================
+- stage: CD
+  displayName: 'Deploy to IIS'
+  dependsOn: CI
+  condition: succeeded()
+  jobs:
+  - job: Deploy
+    steps:
+
+    # Download the artifact from CI
+    - download: current
+      artifact: $(artifactName)
+
+    # Pre-check: create IIS site if missing
+    - powershell: |
+        Import-Module WebAdministration
+
+        $siteName = 'Default Web Site'
+        $physicalPath = 'C:\inetpub\wwwroot'
+
+        if (-not (Test-Path "IIS:\Sites\$siteName")) {
+            Write-Host "IIS site '$siteName' does not exist. Creating..."
+            New-Item IIS:\Sites\$siteName -PhysicalPath $physicalPath -BindingInformation "*:80:"
+        } else {
+            Write-Host "IIS site '$siteName' exists. Updating..."
+        }
+      displayName: 'Pre-check / Create or Update IIS Site'
+
+    # Deploy the web package
+    - task: IISWebAppDeploymentOnMachineGroup@0
+      displayName: 'Deploy to IIS'
+      inputs:
+        WebSiteName: 'Default Web Site'
+        Package: '$(Pipeline.Workspace)/$(artifactName)/**/*.zip'
+        TakeAppOfflineFlag: true
+
+    # Post-deployment: restart IIS
+    - powershell: |
+        Write-Host "Restarting IIS..."
+        iisreset
+      displayName: 'Restart IIS'
+
+    # Print first access page
+    - powershell: |
+        Write-Host "API is deployed and should be available at: http://localhost/api/todoitems"
+        Write-Host "API is deployed and should be available at:"
+        Write-Host "$(apiUrl)"
+      displayName: 'Print API URL'
