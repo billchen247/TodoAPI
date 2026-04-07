@@ -55,7 +55,7 @@ stages:
         arguments: '--configuration $(buildConfiguration) --output $(outputDir)'
         zipAfterPublish: true
 
-    - task: task: PublishPipelineArtifact@1
+    - task: PublishPipelineArtifact@1
       displayName: 'Publish pipeline artifact'
       inputs:
         targetPath: '$(Build.ArtifactStagingDirectory)'
@@ -79,7 +79,7 @@ stages:
     - task: DownloadPipelineArtifact@2
       displayName: 'Download pipeline artifact'
       inputs:
-        artifact:  '$(artifactName)'
+        artifact: '$(artifactName)'
         path: '$(Pipeline.Workspace)/$(artifactName)'
 
     # Pre-check: create IIS site if missing
