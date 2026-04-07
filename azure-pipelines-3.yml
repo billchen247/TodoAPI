@@ -117,8 +117,8 @@ stages:
               iisreset
             displayName: 'Restart IIS'
 
-    # Print first access page
-    - powershell: |
-        Write-Host "API is deployed and should be available at:"
-        Write-Host "$(apiUrl)"
-      displayName: 'Print API URL'
+          # Print first access page
+          - powershell: |
+              Write-Host "API is deployed and should be available at:"
+              Write-Host "$(apiUrl)"
+            displayName: 'Print API URL'
