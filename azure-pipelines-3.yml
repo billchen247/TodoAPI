@@ -125,6 +125,7 @@ stages:
   - deployment: DeployToSitIIS   # 👈 change job → deployment
     displayName: 'Deploy to Sit IIS'
     environment: 'sit-iis'  # 👈 attach environment
+    dependsOn: DeployToLocalIIS   # 👈 THIS enforces sequence
     strategy:
       runOnce:
         deploy:
